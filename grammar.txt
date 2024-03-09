@@ -1,0 +1,60 @@
+
+y = ctrl
+x = mouse_wheel
+
+y(x(l1 + 1, l1 + 4), x(l1(2, 3)))
+
+rc ~l2
+
+y {
+  x [>l1 1] [>l1 4]
+  x [>l1 2] [>l1 3]
+}
+
+
+
+KEY_LEFTCTRL {
+OFF:
+REL_WHEEL+ [hold GP_LB, GP_X] 
+REL_WHEEL- [hold GP_LB, GP_B]
+ON:
+REL_WHEEL+ [hold GP_LB, GP_Y] 
+REL_WHEEL- [hold GP_LB, GP_A]
+}
+
+
+REL_X(RX_AXIS, 1) 
+can't represent this 
+KEY_D((RX_MINUS, 1), RX_ADD)
+
+KEY_LEFTALT(KEY_D)
+
+make a grammar that i don't need to understand the iner workings of the program
+
+// [] = none or once
+// {} = none or more
+// () = grouping 
+// "" = means what is inside the quotes ex: "~" = ~
+// | = or separator
+// literals = int float string etc
+// grouping notation = "" () {} []
+
+REMAP-TABLE ::= (REMAP | BOOL-REMAP) {REMAP | BOOL-REMAP} EOF
+
+REMAP ::= [MODE] KEY (SEPARATOR GPBUTTON | MACRO) NL
+  | REL SEPARATOR GPAXIS NL
+BOOL-REMAP ::= KEY "{" NL "OFF" NL REMAP-GROUP "ON" NL REMAP-GROUP "}"
+REMAP-GROUP ::= REMAP {REMAP}
+
+MACRO ::= "[" ([OPERATOR] GPBUTTON | DELAY) {"," [NL] ([OPERATOR] GPBUTTON | DELAY)} "]"
+KEY ::= "KEY_*" | "BTN_*" | "REL_*" ("-" | "+")
+REL ::= "REL_*"
+GPBUTTON ::= "GP_*" | "GP_AXIS_*" ("-" | "+") [FORCE]
+GPAXIS ::= "GP_AXIS_*" [FORCE]
+OPERATOR ::= "hold" | "release"
+DELAY ::= int "ms"
+MODE ::= "toggle"
+FORCE ::= float | int 0.0 to 1.0
+SEPARATOR ::= ":" 
+NL ::= "\n"{"\n"}
+COMMENT ::= "//" string NL
