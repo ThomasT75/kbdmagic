@@ -24,7 +24,7 @@ KEY_LEFTCTRL {
 KEY_LEFTCTRL{
 OFF
 REL_WHEEL+[hold GP_BTN_LB,GP_BTN_X] 
-REL_WHEELCARALO-[hold GP_BTN_LB,
+REL_WHEEL-[hold GP_BTN_LB,
 GP_BTN_B]
 ON
 REL_WHEEL+[hold GP_BTN_LB,GP_BTN_Y] 
@@ -43,6 +43,6 @@ func Test(t *testing.T) {
   defer func() {
       log.SetOutput(os.Stderr)
   }()
-  t.Log(lexer(sc)) 
+  getRemapTable(sc)
   t.Log(buf.String())
 }

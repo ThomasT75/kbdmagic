@@ -47,6 +47,8 @@ var GP_BTN_MAP = map[string]int{
   "GP_BTN_RT": evdev.BTN_TR2,
   "GP_BTN_LSB": evdev.BTN_THUMBL,
   "GP_BTN_RSB": evdev.BTN_THUMBR,
+  "GP_BTN_LS": evdev.BTN_THUMBL,
+  "GP_BTN_RS": evdev.BTN_THUMBR,
   //DS4 we don't support everything a ds4 does btw ex: share button/touch pos/motion sensor etc
   "GP_BTN_SQUARE": evdev.BTN_X,
   "GP_BTN_TRIANGLE": evdev.BTN_Y,
@@ -64,6 +66,20 @@ var GP_BTN_MAP = map[string]int{
   "GP_BTN_R2": evdev.BTN_TR2,
   "GP_BTN_L3": evdev.BTN_THUMBL,
   "GP_BTN_R3": evdev.BTN_THUMBR,
+  // nintendo switch = ns
+  "GP_BTN_NS_X": evdev.BTN_Y,
+  "GP_BTN_NS_Y": evdev.BTN_X,
+  "GP_BTN_NS_B": evdev.BTN_A,
+  "GP_BTN_NS_A": evdev.BTN_B,
+  "GP_BTN_HOME": evdev.BTN_MODE,
+  "GP_BTN_NS_BUTTON": evdev.BTN_MODE,
+  "GP_BTN_NS_HOME": evdev.BTN_MODE,
+  "GP_BTN_L": evdev.BTN_TL,
+  "GP_BTN_ZL": evdev.BTN_TL2,
+  "GP_BTN_R": evdev.BTN_TR,
+  "GP_BTN_ZR": evdev.BTN_TR2,
+  "GP_BTN_PLUS": evdev.BTN_START,
+  "GP_BTN_MINUS": evdev.BTN_SELECT,
 }
 
 const (
@@ -116,15 +132,42 @@ func init() {
   for k, v := range evdev.BTN {
     BTN_MAP[v] = k
   }
+  //some keys have a race codition in evdev mapping
+  //basically they try to map the they name into the same int
+  //and which one gets there last depends
+  BTN_MAP["BTN_LEFT"] = BTN_LEFT
+  BTN_MAP["BTN_MOUSE"] = BTN_MOUSE
+  BTN_MAP["BTN_A"] = BTN_A
+  BTN_MAP["BTN_GAMEPAD"] = BTN_GAMEPAD
+  BTN_MAP["BTN_SOUTH"] = BTN_SOUTH
+  BTN_MAP["BTN_EAST"] = BTN_EAST
+  BTN_MAP["BTN_B"] = BTN_B
+  BTN_MAP["BTN_NORTH"] = BTN_NORTH
+  BTN_MAP["BTN_X"] = BTN_X
+  BTN_MAP["BTN_WEST"] = BTN_WEST
+  BTN_MAP["BTN_Y"] = BTN_Y
+  BTN_MAP["BTN_MISC"] = BTN_MISC
+  BTN_MAP["BTN_0"] = BTN_0
+
+  KEY_MAP["KEY_SCREENLOCK"] = KEY_SCREENLOCK
+  KEY_MAP["KEY_COFFEE"] = KEY_COFFEE
 }
 
 //for speed i don't check if etype is of type EV_REL or EV_KEY else it will break
 func FromEvdev(ecode uint16, etype uint16) int {
-  var i int = int(ecode) 
+  var i int = int(ecode)
   if etype == evdev.EV_REL {
     i += KEY_MAX + 1
   } 
   return i
+}
+
+func ToStateIndex(index int, evalue int32) int {
+  si := index * 2
+  if evalue - 1 < 0 {
+    si = si - 1
+  }
+  return si
 }
 
 

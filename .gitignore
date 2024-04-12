@@ -1,1 +1,4 @@
 kbdmagic
+kbdmagic.exe
+portable/remaps/**
+!portable/remaps/Default.remap
