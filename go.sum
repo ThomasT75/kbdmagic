@@ -1,2 +1,4 @@
+github.com/ThomasT75/uinput v1.8.1 h1:CrpLVyeINVhE9b1ZDHn4hT2q2qNqQzfOBBB6GRbPCoE=
+github.com/ThomasT75/uinput v1.8.1/go.mod h1:BRwaDsjfc/730h5TfN5a1h0yGoEmuCwp5TvhxfUBU6w=
 github.com/grafov/evdev v1.0.0 h1:/rsOssITVhM7GPMyvlT34kiAOnvYzKJnKvuOqaMYW7c=
 github.com/grafov/evdev v1.0.0/go.mod h1:dcJfZnwr3VySHuphTV+Q0JcbP3AWR9W4WqbLeA3bG6U=

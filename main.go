@@ -13,7 +13,7 @@ import (
 
 	"strings"
 
-	"github.com/bendahl/uinput"
+	"github.com/ThomasT75/uinput"
 
 	"github.com/grafov/evdev"
 
