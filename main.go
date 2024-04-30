@@ -151,23 +151,15 @@ func main() {
     if strings.Contains(dev.Name, *MatchK) && kbd == nil {
       log.Println("kbd found")
       kbd = dev 
-      err = kbd.Grab()
-      if err != nil {
-        log.Fatal(err.Error())
-      }
       defer kbd.Release()
-      kbd_grabed = true
+      kbd_grabed = false
       log.Println("kbd grabed")
     }
     if strings.Contains(dev.Name, *MatchM) && mice == nil {
       log.Println("mouse found")
       mice = dev 
-      err = mice.Grab()
-      if err != nil {
-        log.Fatal(err.Error())
-      }
       defer mice.Release()
-      mice_grabed = true
+      mice_grabed = false
       log.Println("mouse grabed")
     }
   }
