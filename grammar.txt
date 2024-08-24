@@ -1,60 +1,84 @@
-
-y = ctrl
-x = mouse_wheel
-
-y(x(l1 + 1, l1 + 4), x(l1(2, 3)))
-
-rc ~l2
-
-y {
-  x [>l1 1] [>l1 4]
-  x [>l1 2] [>l1 3]
-}
-
-
-
-KEY_LEFTCTRL {
-OFF:
-REL_WHEEL+ [hold GP_LB, GP_X] 
-REL_WHEEL- [hold GP_LB, GP_B]
-ON:
-REL_WHEEL+ [hold GP_LB, GP_Y] 
-REL_WHEEL- [hold GP_LB, GP_A]
-}
-
-
-REL_X(RX_AXIS, 1) 
-can't represent this 
-KEY_D((RX_MINUS, 1), RX_ADD)
-
-KEY_LEFTALT(KEY_D)
+this file is used as a reference and doesn't reflect the actual state of the program
 
 make a grammar that i don't need to understand the iner workings of the program
 
 // [] = none or once
 // {} = none or more
 // () = grouping 
-// "" = means what is inside the quotes ex: "~" = ~
-// | = or separator
+// <> = unique can't show up twice in a the same pattern
+// "" = means what is inside the quotes (can include escape chars) ex: "~" = ~ 
+// | = OR
 // literals = int float string etc
-// grouping notation = "" () {} []
+// grouping notation = "" () {} [] <>
 
-REMAP-TABLE ::= (REMAP | BOOL-REMAP) {REMAP | BOOL-REMAP} EOF
+REMAP-TABLE ::= {OPTION} (REMAP | BOOL-REMAP) {REMAP | BOOL-REMAP} EOF
 
-REMAP ::= [MODE] KEY (SEPARATOR GPBUTTON | MACRO) NL
-  | REL SEPARATOR GPAXIS NL
-BOOL-REMAP ::= KEY "{" NL "OFF" NL REMAP-GROUP "ON" NL REMAP-GROUP "}"
+REMAP ::= [MODE] ANY_KEY SEPARATOR (GPBUTTON | SEQUENCE | NONE) NL
+  | REL SEPARATOR (GPAXIS | NONE) NL
+BOOL-REMAP ::= [MODE] KEY "{" "\n" (<"OFF">|<"ON">) "\n" REMAP-GROUP [(<"OFF">|<"ON">) "\n" REMAP-GROUP] "}" NL
 REMAP-GROUP ::= REMAP {REMAP}
 
-MACRO ::= "[" ([OPERATOR] GPBUTTON | DELAY) {"," [NL] ([OPERATOR] GPBUTTON | DELAY)} "]"
-KEY ::= "KEY_*" | "BTN_*" | "REL_*" ("-" | "+")
+OPTION ::= "!" OPTION_NAME "=" OPTION_VALUE NL
+OPTION_NAME ::= a list of program defined variables
+OPTION_VALUE ::= float | int | DELAY
+
+SEQUENCE ::= "[" SEQUENCE_BUTTON {"+" SEQUENCE_BUTTON} {"," ["\n"] (SEQUENCE_BUTTON {"+" SEQUENCE_BUTTON} | DELAY)} "]"
+SEQUENCE_BUTTON ::= [OPERATOR] GPBUTTON | GPBUTTON ["(" DELAY ")"]
+
+ANY_KEY ::= KEY | SEMI_KEY
+SEMI_KEY ::= "REL_*" ("-" | "+")
+KEY ::= "KEY_*" | "BTN_*" 
 REL ::= "REL_*"
+
 GPBUTTON ::= "GP_*" | "GP_AXIS_*" ("-" | "+") [FORCE]
 GPAXIS ::= "GP_AXIS_*" [FORCE]
+
+NONE := "none"
+
 OPERATOR ::= "hold" | "release"
 DELAY ::= int "ms"
 MODE ::= "toggle"
 FORCE ::= float | int 0.0 to 1.0
 SEPARATOR ::= ":" 
-NL ::= "\n"{"\n"}
 COMMENT ::= "//" string NL
+NL ::= "\n"{"\n"}
+
+
+// WIP
+// 
+// COMBO ::= GPBUTTON "+" GPBUTTON {"+" GPBUTTON}
+// 
+// MACRO ::= "[" ([OPERATOR] GPBUTTON | DELAY) {"," ["\n"] ([OPERATOR] GPBUTTON | DELAY | <MACRO-OPERATORS>)} "]" ["\n" "(" (KEY | REL) {"," ["\n"] (KEY | REL)} ")"]
+// MACRO-OPERATORS ::= "skip" | "wait"
+// macros to be where i want them to be are more complicated than expected so SEQUENCE is the substitute for now 
+// next version of macros are gonna adopt the BOOL-REMAP grammar
+/* example using current grammar: 
+  {
+    // release buffer = if you didn't release a key in the sequence this will have the release cmd for that key or keys
+    // the macro will run these first but can skip them if you run the macro again before WAIT times out 
+    // no release buffer
+    SKIP
+    [hold GP_BTN_L1, 300ms]
+    // running the macro will always do this sequence 
+    // independent release buffer
+    DO 
+    [GP_BTN_NS_A]
+    // wait before continue 
+    WAIT 
+    [1000ms]
+    // invisible release buffer from the keys in SKIP
+    // release buffer from keys in skip
+    invisible buffer // can't actually code it
+    // some keys you want to stop functionality while macro is running
+    BLOCK
+    [KEY]
+    // some keys you want to make the macro finish early 
+    FINISH 
+    [KEY]
+    // same as finish but will do the key after the macro finishes
+    FAST-FORWARD
+    [KEY]
+  }
+*/
+// i might change this as i see what is actually needed and what is not as useful
+

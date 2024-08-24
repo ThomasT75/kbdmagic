@@ -1,11 +1,10 @@
 package remap
 
 import (
-	"bytes"
-	"log"
-	"os"
 	"testing"
 )
+
+// TODO make more test and make test remap files
 
 var sc = `
 
@@ -13,22 +12,22 @@ var sc = `
 
 
 KEY_LEFTCTRL {
-  OFF:
-    REL_WHEEL+ [hold GP_BTN_LB, GP_BTN_X] 
-    REL_WHEEL- [hold GP_BTN_LB, GP_BTN_B]
-  ON:
-    REL_WHEEL+ [hold GP_BTN_LB, GP_BTN_Y] 
-    REL_WHEEL- [hold GP_BTN_LB, GP_BTN_A]
+  OFF
+    REL_WHEEL+ : [hold GP_BTN_LB, GP_BTN_X] 
+    REL_WHEEL- : [hold GP_BTN_LB, GP_BTN_B]
+  ON
+    REL_WHEEL+ : [hold GP_BTN_LB, GP_BTN_Y] 
+    REL_WHEEL- : [hold GP_BTN_LB, GP_BTN_A]
 }
 
 KEY_LEFTCTRL{
 OFF
-REL_WHEEL+[hold GP_BTN_LB,GP_BTN_X] 
-REL_WHEEL-[hold GP_BTN_LB,
+REL_WHEEL+:[hold GP_BTN_LB,GP_BTN_X] 
+REL_WHEEL-:[hold GP_BTN_LB,
 GP_BTN_B]
 ON
-REL_WHEEL+[hold GP_BTN_LB,GP_BTN_Y] 
-REL_WHEEL-[hold GP_BTN_LB,GP_BTN_A]
+REL_WHEEL+:[hold GP_BTN_LB,GP_BTN_Y] 
+REL_WHEEL-:[hold GP_BTN_LB,GP_BTN_A]
 }
 
 KEY_W:GP_AXIS_X-1.0
@@ -37,12 +36,12 @@ REL_X:GP_AXIS_RX
 
 `
 
-func Test(t *testing.T) {
-  var buf bytes.Buffer
-  log.SetOutput(&buf)
-  defer func() {
-      log.SetOutput(os.Stderr)
-  }()
-  getRemapTable(sc)
-  t.Log(buf.String())
+func TestBasicFunctionality(t *testing.T) {
+  _, errList := GetRemapTable(sc)
+  if errList != nil {
+    t.Fail()
+    for _, e := range errList {
+      t.Log(e)
+    }
+  }
 }

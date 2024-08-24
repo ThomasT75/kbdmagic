@@ -1,6 +1,63 @@
 package ecodes
 
-import "github.com/grafov/evdev"
+import (
+	"kbdmagic/internal/log"
+
+	"github.com/grafov/evdev"
+)
+
+// ecodes types
+
+// Normalize the input from the underlying system
+// it should be given by a function in ecodes.FromEvdev
+type NormalizedIndex int
+
+// A normalized index who has a state bound to it 
+//
+// ex input with NormalizedIndex of 1 and value (aka state) of 0 
+// would give a different StatedIndex than if the value was 1 with 
+// the same NormalizedIndex as before
+// 
+// state can be any number but only positive or negative is taken into account
+// 0 is counted as negative
+type StatedIndex int
+
+const MAX_STATED_INDEX = ECODES_MAX * 2
+
+func (si StatedIndex) String() string {
+  var text string = "RELEASED: "
+  if IsStateIndexOn(si) {
+    text = "PRESSED: "
+  }
+
+  e, t := toEvdev(toNormalizedIndex(si))
+  switch t {
+  case evdev.EV_KEY:
+    if e == 0 {
+      text = "NoKey"
+      goto PRINT
+    }
+    s, ok := evdev.KEY[int(e)]
+    if ok {
+      text += s
+      goto PRINT
+    }
+    s, ok = evdev.BTN[int(e)]
+    if ok {
+      text += s
+      goto PRINT
+    }
+  case evdev.EV_REL:
+    s, ok := evdev.REL[int(e)]
+    if ok {
+      text += s
+      goto PRINT
+    }
+  }
+  text += "NoKey"
+  PRINT:
+  return text
+}
 
 //evdev doesn't export ecodes map so we do this for ok check
 var REL_MAP = map[string]int{}
@@ -27,6 +84,11 @@ var GP_BTN_MAP = map[string]int{
   "GP_BTN_DPAD_RIGHT": evdev.BTN_DPAD_RIGHT,
   "GP_BTN_THUMBL": evdev.BTN_THUMBL,
   "GP_BTN_THUMBR": evdev.BTN_THUMBR,
+  // DPAD
+  "GP_DPAD_UP": evdev.BTN_DPAD_UP,
+  "GP_DPAD_DOWN": evdev.BTN_DPAD_DOWN,
+  "GP_DPAD_LEFT": evdev.BTN_DPAD_LEFT,
+  "GP_DPAD_RIGHT": evdev.BTN_DPAD_RIGHT,
   //XBOX ONE/360
   "GP_BTN_X": evdev.BTN_X,
   "GP_BTN_Y": evdev.BTN_Y,
@@ -82,23 +144,49 @@ var GP_BTN_MAP = map[string]int{
   "GP_BTN_MINUS": evdev.BTN_SELECT,
 }
 
+var _GP_BTN_MAP_STRING = map[int]string {
+  evdev.BTN_Y: "GP_BTN_NORTH",
+  evdev.BTN_X: "GP_BTN_WEST",
+  evdev.BTN_A: "GP_BTN_SOUTH",
+  evdev.BTN_B: "GP_BTN_EAST",
+  evdev.BTN_START: "GP_BTN_START",
+  evdev.BTN_SELECT: "GP_BTN_SELECT",
+  evdev.BTN_MODE: "GP_BTN_MODE",
+  evdev.BTN_TL: "GP_BTN_TL",
+  evdev.BTN_TL2: "GP_BTN_TL2",
+  evdev.BTN_TR: "GP_BTN_TR",
+  evdev.BTN_TR2: "GP_BTN_TR2",
+  evdev.BTN_DPAD_UP: "GP_BTN_DPAD_UP",
+  evdev.BTN_DPAD_DOWN: "GP_BTN_DPAD_DOWN",
+  evdev.BTN_DPAD_LEFT: "GP_BTN_DPAD_LEFT",
+  evdev.BTN_DPAD_RIGHT: "GP_BTN_DPAD_RIGHT",
+  evdev.BTN_THUMBL: "GP_BTN_THUMBL",
+  evdev.BTN_THUMBR: "GP_BTN_THUMBR",
+}
+
+func GP_STRING(c int) (string, bool) {
+  s, ok := _GP_BTN_MAP_STRING[c]
+  if ok {
+    return s, true
+  }
+  return "", false
+}
+
 const (
-  ABS_X_NEGATIVE = evdev.ABS_X + evdev.ABS_MAX + 1
-  ABS_Y_NEGATIVE = evdev.ABS_Y + evdev.ABS_MAX + 1
-  ABS_RX_NEGATIVE = evdev.ABS_RX + evdev.ABS_MAX + 1
-  ABS_RY_NEGATIVE = evdev.ABS_RY + evdev.ABS_MAX + 1
+  ABS_X_NEGATIVE = -evdev.ABS_X*2 - 2
+  ABS_Y_NEGATIVE = -evdev.ABS_Y*2 - 2
+  ABS_RX_NEGATIVE = -evdev.ABS_RX*2 - 2
+  ABS_RY_NEGATIVE = -evdev.ABS_RY*2 - 2
 
-  ABS_X_POSITIVE = evdev.ABS_X + evdev.ABS_MAX * 2 + 1
-  ABS_Y_POSITIVE = evdev.ABS_Y + evdev.ABS_MAX * 2 + 1
-  ABS_RX_POSITIVE = evdev.ABS_RX + evdev.ABS_MAX * 2 + 1
-  ABS_RY_POSITIVE = evdev.ABS_RY + evdev.ABS_MAX * 2 + 1
+  ABS_X_POSITIVE = -evdev.ABS_X*2 - 1
+  ABS_Y_POSITIVE = -evdev.ABS_Y*2 - 1
+  ABS_RX_POSITIVE = -evdev.ABS_RX*2 - 1
+  ABS_RY_POSITIVE = -evdev.ABS_RY*2 - 1
 
-  ABS_X = evdev.ABS_X
-  ABS_Y = evdev.ABS_Y
-  ABS_Z = evdev.ABS_Z
-  ABS_RX = evdev.ABS_RX
-  ABS_RY = evdev.ABS_RY
-  ABS_RZ = evdev.ABS_RZ
+  ABS_X = evdev.ABS_X // 0
+  ABS_Y = evdev.ABS_Y // 1
+  ABS_RX = evdev.ABS_RX // 3
+  ABS_RY = evdev.ABS_RY // 4
 )
 
 
@@ -113,10 +201,8 @@ var GP_AXIS_MAP = map[string]int{
   "GP_AXIS_RY_POSITIVE": ABS_RY_POSITIVE,
   "GP_AXIS_X": ABS_X,
   "GP_AXIS_Y": ABS_Y,
-  "GP_AXIS_Z": ABS_Z,
   "GP_AXIS_RX": ABS_RX,
   "GP_AXIS_RY": ABS_RY,
-  "GP_AXIS_RZ": ABS_RZ,
 }
 
 func init() {
@@ -154,22 +240,96 @@ func init() {
 }
 
 //for speed i don't check if etype is of type EV_REL or EV_KEY else it will break
-func FromEvdev(ecode uint16, etype uint16) int {
+func NormalizeFromInputSys(ecode uint16, etype uint16) NormalizedIndex {
   var i int = int(ecode)
   if etype == evdev.EV_REL {
     i += KEY_MAX + 1
   } 
-  return i
+  return NormalizedIndex(i)
 }
 
-func ToStateIndex(index int, evalue int32) int {
+//don't use it outside of String and formating reasons
+func toEvdev(ni NormalizedIndex) (ecode uint16, etype uint16) {
+  ecode = uint16(ni)
+  etype = evdev.EV_KEY
+  if ni - (KEY_MAX + 1) >= 0 {
+    ecode = uint16(ni - (KEY_MAX + 1))
+    etype = evdev.EV_REL
+  }
+
+  return ecode, etype
+}
+
+// basically convert 1 number and 2 states (on or off) into 1 unique number
+func ToStateIndex(index NormalizedIndex, evalue int32) StatedIndex {
   si := index * 2
-  if evalue - 1 < 0 {
+  if evalue <= 0 {
     si = si - 1
   }
-  return si
+  return StatedIndex(si)
 }
 
+//don't use it outside of String and formating reasons
+func toNormalizedIndex(si StatedIndex) NormalizedIndex {
+  return NormalizedIndex((si / 2) + (si % 2))
+}
+
+func IsStateIndexOn(stateIndex StatedIndex) bool {
+  return stateIndex % 2 == 0 
+}
+
+// for use with MapGP*ToIndex() functions
+// there are 15 buttons: Triggers + C and Z buttons
+// there are 4 directions for a dpad
+// there are 12 axis directions: X, Y, X-, X+, Y-, Y+ for each stick
+
+const GP_INDEX_BASE int = 0
+const GP_BTN_INDEX_BASE int = GP_INDEX_BASE // as in first valid index
+const GP_BTN_INDEX_MAX int = GP_BTN_INDEX_BASE + 15 // as in len() 
+const GP_DPAD_INDEX_BASE int = GP_BTN_INDEX_MAX 
+const GP_DPAD_INDEX_MAX int = GP_DPAD_INDEX_BASE + 4
+const GP_AXIS_INDEX_BASE int = GP_DPAD_INDEX_MAX
+const GP_AXIS_INDEX_MAX int = GP_AXIS_INDEX_BASE + 12
+const GP_INDEX_MAX int = GP_AXIS_INDEX_MAX
+
+// don't rely on this function for permanent indexing
+// use GP_INDEX_MAX to know the max index this function produces
+func MapGPToIndex(index int) int {
+  // the following is valid input
+  // btn range
+  // 0x130 to 0x13e 
+  // dpad range
+  // 0x220 to 0x223 
+  // axis ranges 
+  // 0x00, 0x01 
+  // 0x03, 0x04
+  // -4 to -1
+  // -10 to -7
+
+  switch {
+  case index >= 0x130 && index <= 0x13e:
+    // index + to alignment + base
+    return index - 0x130 + GP_BTN_INDEX_BASE
+  case index >= 0x220 && index <= 0x223:
+    // index + to alignment + base
+    return index - 0x220 + GP_DPAD_INDEX_BASE
+  case index == 0x00, index == 0x01:
+    // index + base // joys of being already aligned
+    return index + GP_AXIS_INDEX_BASE
+  case index == 0x03, index == 0x04:
+    // index + to alignment + base
+    return index - 1 + GP_AXIS_INDEX_BASE
+  case index >= -4 && index <= -1:
+    // index + to positive + to alignment + base
+    return index + 4 + 4 + GP_AXIS_INDEX_BASE
+  case index >= -10 && index <= -7:
+    // index + to positive + to alignment + base
+    return index + 10 + 8 + GP_AXIS_INDEX_BASE
+  default:
+    log.Fatal("invalid input index can't convert to mapped index")
+  }
+  return -1
+}
 
 //copied from evdev package and removed everything that is not a KEY/BTN/REL 
 //and shifted everything to be in 1 single range so no overlap
